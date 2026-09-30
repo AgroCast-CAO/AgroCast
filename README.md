@@ -81,6 +81,77 @@ so 20 parcels in the same area cost only a couple of API calls.
 `AGROCAST_DATABASE_URL`, `AGROCAST_WEATHER_MODE` (`live`|`synthetic`), `AGROCAST_GEE_ENABLED`, `AGROCAST_GEE_PROJECT`.
 Crop parameters and alert thresholds live in `app/config.py` – add a crop by adding a `CropProfile`.
 
+## Working with the GitHub repo (team workflow)
+This project lives at `https://github.com/AgroCast-CAO/AgroCast`. A few notes before the steps below:
+* `.venv/`, `*.db`, and `__pycache__/` are excluded via `.gitignore` — never commit these. Everyone creates
+  their own local `.venv` and database; only the source code (`app/`, `tests/`, `scripts/`, config files) is shared.
+* Treat `main` as always-working. Do your changes on a separate branch and merge back via a Pull Request (PR)
+  rather than committing straight to `main`, so a half-finished feature never breaks the whole team's copy.
+
+### First time on a new machine (clone)
+```bash
+git clone https://github.com/AgroCast-CAO/AgroCast.git
+cd AgroCast
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python -m pytest -q                # confirm everything works before you start changing anything
+```
+
+### Daily workflow
+1. **Pull the latest changes** before you start working, so you're not building on stale code:
+   ```bash
+   git checkout main
+   git pull
+   ```
+2. **Create a branch** for whatever you're working on (one branch per feature/fix):
+   ```bash
+   git checkout -b your-name/short-description     # e.g. izzy/hub-assignment
+   ```
+3. **Make your changes** in VS Code as normal.
+4. **Check what changed** before committing:
+   ```bash
+   git status                        # which files changed
+   git diff                          # the actual line-by-line changes
+   ```
+5. **Stage and commit**:
+   ```bash
+   git add .
+   git commit -m "Short description of what you did"
+   ```
+   Commit often, in small logical chunks, rather than one giant commit at the end of the day.
+6. **Push your branch** to GitHub:
+   ```bash
+   git push -u origin your-name/short-description
+   ```
+   (After the first push, later pushes on that branch just need `git push`.)
+7. **Open a Pull Request**: go to the repo on GitHub, you'll see a banner offering to "Compare & pull request"
+   for your branch — click it, add a short description of what changed and why, and submit.
+8. **Get it reviewed and merged**: a teammate reviews the PR on GitHub, leaves comments if needed, and merges
+   it into `main` once it looks good. GitHub's web UI handles the merge — you don't need any local commands for this part.
+9. **Clean up** after your branch is merged:
+   ```bash
+   git checkout main
+   git pull                          # bring the merged changes down
+   git branch -d your-name/short-description
+   ```
+
+### Common situations
+| Situation | What to do |
+|---|---|
+| `git pull` says "Your local changes would be overwritten" | Commit or stash your work first: `git stash`, then `git pull`, then `git stash pop` |
+| Merge conflict when pulling or merging a PR | VS Code will mark the conflicting lines in the file with `<<<<<<<` / `=======` / `>>>>>>>` — edit the file to keep the correct version, then `git add .` and `git commit` |
+| You committed something you shouldn't have (like a `.db` file) | `git rm --cached filename`, make sure it's in `.gitignore`, then commit again |
+| You want to see who changed what | `git log --oneline` for a compact history, or check the "commits" tab on GitHub |
+| A teammate needs access | Repo → **Settings → Collaborators → Add people**, invite by GitHub username or email |
+
+### Adding new Python packages
+If you `pip install` something new, add it to `requirements.txt` so teammates get it too:
+```bash
+pip freeze > requirements.txt      # regenerates the file from what's installed in your .venv
+```
+Review the diff before committing — `pip freeze` can pull in extra sub-dependencies you don't need to pin.
+
 ## Using PostgreSQL/PostGIS
 1. `pip install psycopg2-binary`, then `AGROCAST_DATABASE_URL=postgresql+psycopg2://user:pass@localhost/agrocast`
 2. Everything works as-is (lat/lon floats + GeoJSON text).
@@ -102,3 +173,22 @@ Without credentials you get a `NullNDVIProvider`, so the core system is unaffect
   weather station or PAGASA data. Cabbage `T_base`, 1200 GDD and 18 t/ha are your given parameters – calibrate with field data.
 * `synthetic` weather is for development/tests only and is flagged via `used_synthetic_weather` internally; don't use it for real advisories.
 * No authentication yet, and schema changes need Alembic migrations once you have real data.
+
+## Dashboard (frontend)
+A single-page dashboard lives in `frontend/index.html` and is served by the same FastAPI app —
+no separate server, no CORS setup. Once `uvicorn app.main:app --reload` is running, open:
+
+**http://127.0.0.1:8000/**
+
+It shows:
+* A hero readout of today's peak Congestion Index and a plain-language early-warning message
+  ("High Glut expected in 5 days, around Oct 3").
+* A 14-day rolling-window bar strip, colored Normal / Warning / High Glut.
+* The two non-overlapping weekly buckets.
+* A form to register a new parcel (harvest date is computed live) and a parcel ledger table with
+  growth progress bars, so you can demo the whole loop — register a plot, watch its GDD progress,
+  see it fold into the congestion forecast — without touching `/docs`.
+
+It re-fetches from the live API on load and on Refresh (`?refresh=true`), so it always reflects the
+latest weather-based projections. If no hub exists yet, it shows an inline form to create one instead
+of erroring.

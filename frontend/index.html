@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroCast — Supply Congestion Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #efeee3;
+    --paper-raised: #f7f6ee;
+    --ink: #1b2420;
+    --ink-soft: #4a544a;
+    --sage: #5c7a5f;
+    --line: rgba(27, 36, 32, 0.14);
+    --line-strong: rgba(27, 36, 32, 0.28);
+    --green: #34503c;
+    --green-soft: #dfe6de;
+    --amber: #c98a2e;
+    --amber-soft: #f3e3c6;
+    --rust: #9c4530;
+    --rust-soft: #ecd9d1;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  a { color: var(--green); }
+
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid var(--ink);
+    flex-wrap: wrap;
+  }
+
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: 34px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .masthead .tagline {
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    margin-top: 4px;
+  }
+
+  .masthead-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+
+  select#hub-select {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    padding: 7px 10px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  button {
+    font-family: var(--sans);
+    cursor: pointer;
+  }
+
+  .btn {
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 14px;
+    font-size: 13.5px;
+    border-radius: 3px;
+  }
+  .btn:hover { background: var(--green); border-color: var(--green); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+  }
+  .btn.secondary:hover { border-color: var(--ink); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 40px; }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .section-head h2 {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .section-head .note {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Hero readout ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 36px;
+    align-items: center;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hero-figure { min-width: 150px; }
+
+  .hero-figure .ci-value {
+    font-family: var(--serif);
+    font-size: 76px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-figure .ci-label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .status-pill {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 11px;
+    border-radius: 20px;
+    margin-top: 10px;
+  }
+  .status-normal { background: var(--green-soft); color: var(--green); }
+  .status-warning { background: var(--amber-soft); color: #7a5518; }
+  .status-high_glut { background: var(--rust-soft); color: var(--rust); }
+
+  .hero-detail p {
+    margin: 0 0 8px;
+    font-size: 15px;
+  }
+  .hero-detail .headline { font-size: 17px; font-weight: 500; }
+  .hero-detail .sub { color: var(--ink-soft); font-size: 13.5px; }
+
+  .hero-stats {
+    display: flex;
+    gap: 28px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .hero-stats .stat .num {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .hero-stats .stat .lbl {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* ---------- Strip chart ---------- */
+  .strip {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 150px;
+    padding: 10px 0 0;
+    position: relative;
+  }
+  .strip::before {
+    /* threshold guide at CI = 1.0 */
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    top: 40px;
+    border-top: 1px dashed var(--line-strong);
+  }
+  .strip-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .strip-bar .col {
+    width: 100%;
+    max-width: 30px;
+    border-radius: 2px 2px 0 0;
+    background: var(--sage);
+    transition: height 0.25s ease;
+  }
+  .strip-bar .col.status-normal { background: #8ba38d; }
+  .strip-bar .col.status-warning { background: var(--amber); }
+  .strip-bar .col.status-high_glut { background: var(--rust); }
+  .strip-bar .day {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .strip-bar .ci {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-soft);
+  }
+  .strip-legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .strip-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  /* ---------- Two column ---------- */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 40px;
+  }
+  @media (max-width: 760px) {
+    .cols { grid-template-columns: 1fr; }
+  }
+
+  table.buckets { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.buckets th, table.buckets td {
+    text-align: left;
+    padding: 9px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.buckets th { color: var(--ink-soft); font-weight: 500; font-size: 12px; }
+  table.buckets td.num { font-family: var(--mono); }
+
+  /* ---------- Form ---------- */
+  form.parcel-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  form.parcel-form .full { grid-column: 1 / -1; }
+  form.parcel-form label {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  form.parcel-form input, form.parcel-form select {
+    width: 100%;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    padding: 8px 9px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    background: var(--paper-raised);
+    color: var(--ink);
+  }
+  form.parcel-form input:focus, form.parcel-form select:focus {
+    outline: 2px solid var(--green);
+    outline-offset: 1px;
+  }
+  .form-msg { font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .form-msg.ok { color: var(--green); }
+  .form-msg.err { color: var(--rust); }
+
+  /* ---------- Ledger table ---------- */
+  table.ledger { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.ledger th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    padding: 0 10px 8px;
+    border-bottom: 1px solid var(--ink);
+  }
+  table.ledger td {
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  table.ledger tr:hover td { background: rgba(27,36,32,0.025); }
+  .parcel-name { font-weight: 500; }
+  .parcel-owner { color: var(--ink-soft); font-size: 12px; }
+
+  .progress-track {
+    width: 100px;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill { height: 100%; background: var(--green); }
+  .progress-fill.mature { background: var(--amber); }
+  .progress-pct { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); margin-left: 8px; }
+  .progress-cell { display: flex; align-items: center; }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: capitalize;
+  }
+  .badge.growing { background: var(--green-soft); color: var(--green); }
+  .badge.planned { background: var(--line); color: var(--ink-soft); }
+  .badge.mature { background: var(--amber-soft); color: #7a5518; }
+  .badge.harvested { background: transparent; color: var(--ink-soft); border: 1px solid var(--line-strong); }
+
+  .row-action {
+    font-size: 12px;
+    background: none;
+    border: 1px solid var(--line-strong);
+    padding: 5px 10px;
+    border-radius: 3px;
+    color: var(--ink-soft);
+  }
+  .row-action:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* ---------- Empty / loading states ---------- */
+  .empty {
+    padding: 32px 0;
+    color: var(--ink-soft);
+  }
+  .empty .headline { font-family: var(--serif); font-size: 20px; color: var(--ink); margin-bottom: 8px; }
+  .empty form { margin-top: 18px; max-width: 420px; display: grid; gap: 10px; }
+  .empty input {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    padding: 9px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    background: var(--paper-raised);
+  }
+
+  .skeleton { color: var(--ink-soft); font-size: 13.5px; padding: 20px 0; }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .strip-bar .col { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <h1>AgroCast</h1>
+      <div class="tagline">Supply congestion early warning — Benguet highland vegetable corridor</div>
+    </div>
+    <div class="masthead-right">
+      <label for="hub-select" class="visually-hidden">Trading hub</label>
+      <select id="hub-select" disabled><option>Loading hubs…</option></select>
+      <span id="today-label"></span>
+      <button class="btn secondary" id="refresh-btn">Refresh</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="skeleton">Loading forecast…</div>
+  </div>
+
+  <footer>
+    AgroCast API at <code id="api-base-label"></code> ·
+    High Glut triggers when the projected 7-day volume exceeds 120% of hub capacity ·
+    Data refreshes from live weather when you press Refresh.
+  </footer>
+</div>
+
+<script>
+const API = ""; // same-origin: dashboard is served by the FastAPI app itself
+const STATUS_LABEL = { NORMAL: "Normal", WARNING: "Warning", HIGH_GLUT: "High Glut" };
+
+const app = document.getElementById("app");
+const hubSelect = document.getElementById("hub-select");
+const todayLabel = document.getElementById("today-label");
+const refreshBtn = document.getElementById("refresh-btn");
+document.getElementById("api-base-label").textContent = window.location.origin;
+
+let hubs = [];
+let currentHub = null;
+
+async function fetchJSON(path, opts) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch (_) {}
+    const err = new Error(detail);
+    err.status = res.status;
+    throw err;
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function fmtDayLabel(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
+}
+function statusClass(s) { return "status-" + s.toLowerCase(); }
+
+async function loadHubs() {
+  hubs = await fetchJSON("/api/hubs");
+  hubSelect.innerHTML = "";
+  if (hubs.length === 0) {
+    hubSelect.innerHTML = "<option>No hubs yet</option>";
+    hubSelect.disabled = true;
+    return null;
+  }
+  hubs.forEach(h => {
+    const opt = document.createElement("option");
+    opt.value = h.hub_name;
+    opt.textContent = `${h.hub_name} (${h.weekly_absorption_limit_tons.toFixed(0)} t/wk)`;
+    hubSelect.appendChild(opt);
+  });
+  hubSelect.disabled = false;
+  currentHub = currentHub && hubs.some(h => h.hub_name === currentHub) ? currentHub : hubs[0].hub_name;
+  hubSelect.value = currentHub;
+  return currentHub;
+}
+
+function renderEmptyNoHub() {
+  app.innerHTML = `
+    <div class="empty">
+      <div class="headline">No trading hub registered yet</div>
+      <p>AgroCast needs at least one hub to compare projected harvest volume against. Create one below,
+      or run <code>python -m scripts.seed_data --reset</code> from your project folder for sample data.</p>
+      <form id="hub-form">
+        <input id="new-hub-name" placeholder="Hub name, e.g. La Trinidad BAPTC" required>
+        <input id="new-hub-cap" type="number" min="1" step="1" placeholder="Weekly absorption limit (tons)" required>
+        <button class="btn" type="submit" style="justify-self:start;">Create hub</button>
+        <div class="form-msg" id="hub-form-msg"></div>
+      </form>
+    </div>`;
+  document.getElementById("hub-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("hub-form-msg");
+    try {
+      await fetchJSON("/api/hubs", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hub_name: document.getElementById("new-hub-name").value,
+          weekly_absorption_limit_tons: parseFloat(document.getElementById("new-hub-cap").value),
+        }),
+      });
+      await loadAll();
+    } catch (err) {
+      msg.textContent = err.message; msg.className = "form-msg err";
+    }
+  });
+}
+
+function heroTemplate(forecast) {
+  const s = forecast.summary;
+  const peak = forecast.daily.reduce((a, b) => (b.congestion_index > a.congestion_index ? b : a));
+  let headline, sub;
+  if (s.overall_status === "HIGH_GLUT") {
+    const inDays = Math.round((new Date(s.first_high_glut_date) - new Date(forecast.generated_on)) / 86400000);
+    headline = inDays <= 0
+      ? `High Glut risk today at ${forecast.hub_name}.`
+      : `High Glut expected in ${inDays} day${inDays === 1 ? "" : "s"}, around ${fmtDate(s.first_high_glut_date)}.`;
+    sub = `Projected volume peaks at ${peak.rolling_7d_tons.toFixed(0)} t against a ${forecast.baseline_capacity_tons_per_week.toFixed(0)} t/week capacity — move harvests earlier or route to another hub.`;
+  } else if (s.overall_status === "WARNING") {
+    headline = `Supply is tightening at ${forecast.hub_name}.`;
+    sub = `Peak projected volume reaches ${(s.peak_congestion_index * 100).toFixed(0)}% of capacity around ${fmtDate(s.peak_window_start)}. Below the glut threshold, but worth watching.`;
+  } else {
+    headline = `${forecast.hub_name} is clear for the next ${forecast.horizon_days} days.`;
+    sub = `Projected volume stays under capacity across the full forecast window.`;
+  }
+  if (s.overdue_tons > 0) {
+    sub += ` ${s.overdue_tons.toFixed(0)} t of standing mature crop is still unharvested.`;
+  }
+
+  return `
+    <div class="hero">
+      <div class="hero-figure">
+        <div class="ci-value">${peak.congestion_index.toFixed(2)}×</div>
+        <div class="ci-label">peak congestion index</div>
+        <span class="status-pill ${statusClass(s.overall_status)}">${STATUS_LABEL[s.overall_status]}</span>
+      </div>
+      <div class="hero-detail">
+        <p class="headline">${headline}</p>
+        <p class="sub">${sub}</p>
+        <div class="hero-stats">
+          <div class="stat"><div class="num">${s.active_parcels}</div><div class="lbl">active parcels</div></div>
+          <div class="stat"><div class="num">${forecast.baseline_capacity_tons_per_week.toFixed(0)} t</div><div class="lbl">weekly capacity</div></div>
+          <div class="stat"><div class="num">${s.high_glut_days}</div><div class="lbl">high-glut day(s) ahead</div></div>
+          <div class="stat"><div class="num">${s.overdue_tons.toFixed(0)} t</div><div class="lbl">overdue standing crop</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function stripTemplate(forecast) {
+  const maxCI = Math.max(1.4, ...forecast.daily.map(d => d.congestion_index));
+  const bars = forecast.daily.map(d => {
+    const heightPct = Math.min(100, (d.congestion_index / maxCI) * 100);
+    return `
+      <div class="strip-bar">
+        <div class="ci">${d.congestion_index.toFixed(2)}</div>
+        <div class="col ${statusClass(d.alert_status)}" style="height:${Math.max(3, heightPct)}%"></div>
+        <div class="day">${fmtDayLabel(d.date)} ${fmtDate(d.date)}</div>
+      </div>`;
+  }).join("");
+  return `
+    <section>
+      <div class="section-head">
+        <h2>14-day rolling congestion</h2>
+        <div class="note">each bar = 7-day volume starting that date ÷ hub capacity · dashed line = 1.0×</div>
+      </div>
+      <div class="strip">${bars}</div>
+      <div class="strip-legend">
+        <span><i class="swatch" style="background:#8ba38d"></i> Normal</span>
+        <span><i class="swatch" style="background:var(--amber)"></i> Warning (&gt;1.0×)</span>
+        <span><i class="swatch" style="background:var(--rust)"></i> High Glut (&gt;1.2×)</span>
+      </div>
+    </section>`;
+}
+
+function bucketsTemplate(forecast) {
+  const rows = forecast.weekly_buckets.map(b => `
+    <tr>
+      <td>${b.label}<br><span class="parcel-owner">${fmtDate(b.start_date)}–${fmtDate(b.end_date)}</span></td>
+      <td class="num">${b.projected_tons.toFixed(0)} t</td>
+      <td class="num">${b.congestion_index.toFixed(2)}×</td>
+      <td><span class="status-pill ${statusClass(b.alert_status)}">${STATUS_LABEL[b.alert_status]}</span></td>
+    </tr>`).join("");
+  return `
+    <div>
+      <div class="section-head"><h2>Weekly buckets</h2></div>
+      <table class="buckets">
+        <thead><tr><th>Week</th><th>Volume</th><th>CI</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function parcelFormTemplate() {
+  const today = new Date().toISOString().slice(0, 10);
+  return `
+    <div>
+      <div class="section-head"><h2>Register a parcel</h2></div>
+      <form class="parcel-form" id="parcel-form">
+        <div><label for="p-name">Plot name</label><input id="p-name" required placeholder="e.g. Atok Plot 21"></div>
+        <div><label for="p-owner">Owner</label><input id="p-owner" required placeholder="e.g. Juan Dela Cruz"></div>
+        <div><label for="p-crop">Crop</label><select id="p-crop"><option value="cabbage">Highland cabbage</option></select></div>
+        <div><label for="p-area">Area (hectares)</label><input id="p-area" type="number" min="0.01" step="0.01" required placeholder="1.5"></div>
+        <div><label for="p-date">Planting date</label><input id="p-date" type="date" value="${today}" required></div>
+        <div></div>
+        <div><label for="p-lat">Latitude</label><input id="p-lat" type="number" step="0.00001" value="16.58" required></div>
+        <div><label for="p-lon">Longitude</label><input id="p-lon" type="number" step="0.00001" value="120.70" required></div>
+        <div class="full">
+          <button class="btn" type="submit" id="p-submit">Register &amp; project harvest</button>
+          <div class="form-msg" id="p-msg"></div>
+        </div>
+      </form>
+    </div>`;
+}
+
+function ledgerTemplate(parcels) {
+  if (parcels.length === 0) {
+    return `<div class="empty">No parcels registered yet. Use the form above to add the first one.</div>`;
+  }
+  const rows = parcels.map(p => {
+    const fillClass = p.status === "mature" ? "mature" : "";
+    const harvestDate = p.estimated_harvest_date ? fmtDate(p.estimated_harvest_date) : "—";
+    const basisNote = p.harvest_basis === "climatology" ? " (est.)" : "";
+    const canHarvest = p.status !== "harvested";
+    return `
+      <tr data-id="${p.id}">
+        <td><div class="parcel-name">${p.name}</div><div class="parcel-owner">${p.owner}</div></td>
+        <td>${p.area_hectares.toFixed(2)} ha</td>
+        <td>
+          <div class="progress-cell">
+            <div class="progress-track"><div class="progress-fill ${fillClass}" style="width:${p.progress_pct}%"></div></div>
+            <span class="progress-pct">${p.progress_pct.toFixed(0)}%</span>
+          </div>
+        </td>
+        <td>${harvestDate}${basisNote}</td>
+        <td class="num">${p.expected_tonnage.toFixed(1)} t</td>
+        <td><span class="badge ${p.status}">${p.status}</span></td>
+        <td>${canHarvest ? `<button class="row-action" data-action="harvest" data-id="${p.id}">Mark harvested</button>` : ""}</td>
+      </tr>`;
+  }).join("");
+  return `
+    <table class="ledger">
+      <thead><tr>
+        <th>Plot</th><th>Area</th><th>Growth (GDD)</th><th>Est. harvest</th><th>Expected</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function loadAll() {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = "Refreshing…";
+  try {
+    const hub = await loadHubs();
+    if (!hub) { renderEmptyNoHub(); return; }
+
+    const [forecast, parcels] = await Promise.all([
+      fetchJSON(`/api/congestion-forecast?hub_name=${encodeURIComponent(hub)}&refresh=true`),
+      fetchJSON(`/api/parcels?refresh=true`),
+    ]);
+
+    todayLabel.textContent = new Date(forecast.generated_on + "T00:00:00").toLocaleDateString(undefined, {
+      weekday: "short", month: "short", day: "numeric",
+    });
+
+    app.innerHTML = `
+      ${heroTemplate(forecast)}
+      ${stripTemplate(forecast)}
+      <section class="cols">
+        ${bucketsTemplate(forecast)}
+        ${parcelFormTemplate()}
+      </section>
+      <section>
+        <div class="section-head">
+          <h2>Parcel ledger</h2>
+          <div class="note">${parcels.length} parcel${parcels.length === 1 ? "" : "s"}</div>
+        </div>
+        ${ledgerTemplate(parcels)}
+      </section>`;
+
+    document.getElementById("parcel-form").addEventListener("submit", onParcelSubmit);
+    document.querySelectorAll('[data-action="harvest"]').forEach(btn => {
+      btn.addEventListener("click", () => onMarkHarvested(btn.dataset.id));
+    });
+  } catch (err) {
+    if (err.status === 404) { renderEmptyNoHub(); }
+    else {
+      app.innerHTML = `<div class="empty"><div class="headline">Couldn't reach the AgroCast API</div>
+        <p>${err.message}. Confirm <code>uvicorn app.main:app --reload</code> is running, then press Refresh.</p></div>`;
+    }
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Refresh";
+  }
+}
+
+async function onParcelSubmit(e) {
+  e.preventDefault();
+  const msg = document.getElementById("p-msg");
+  const submitBtn = document.getElementById("p-submit");
+  submitBtn.disabled = true;
+  msg.textContent = ""; msg.className = "form-msg";
+  try {
+    await fetchJSON("/api/parcels", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: document.getElementById("p-name").value,
+        owner: document.getElementById("p-owner").value,
+        crop_type: document.getElementById("p-crop").value,
+        area_hectares: parseFloat(document.getElementById("p-area").value),
+        planting_date: document.getElementById("p-date").value,
+        latitude: parseFloat(document.getElementById("p-lat").value),
+        longitude: parseFloat(document.getElementById("p-lon").value),
+      }),
+    });
+    msg.textContent = "Parcel registered."; msg.className = "form-msg ok";
+    await loadAll();
+  } catch (err) {
+    msg.textContent = err.message; msg.className = "form-msg err";
+    submitBtn.disabled = false;
+  }
+}
+
+async function onMarkHarvested(id) {
+  try {
+    await fetchJSON(`/api/parcels/${id}/harvest`, { method: "POST" });
+    await loadAll();
+  } catch (err) {
+    alert("Couldn't mark harvested: " + err.message);
+  }
+}
+
+hubSelect.addEventListener("change", () => { currentHub = hubSelect.value; loadAll(); });
+refreshBtn.addEventListener("click", loadAll);
+
+loadAll();
+</script>
+</body>
+</html>
