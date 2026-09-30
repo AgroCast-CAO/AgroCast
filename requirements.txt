@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+sqlmodel>=0.0.16
+pydantic>=2.5
+httpx>=0.26
+tzdata            # needed for Asia/Manila timezone on Windows
+pytest>=8.0       # tests only
+# Optional (GEE / NDVI module):  pip install earthengine-api
+# Optional (PostGIS):            pip install psycopg2-binary geoalchemy2
